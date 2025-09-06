@@ -36,11 +36,10 @@ export default {
       
       // Route based on source domain
       if (hostname === 'check.a11yplan.de' || hostname.includes('check.')) {
-        // For Nuxt static assets, they are served from /public/check/_nuxt/
-        // But the HTML references them as /_nuxt/, so we need to rewrite the path
+        // For Nuxt static assets, they are served from the root
         if (pathname.startsWith('/_nuxt/') || pathname.startsWith('/_ipx/')) {
-          // Rewrite /_nuxt/* to /public/check/_nuxt/*
-          targetUrl = `https://${TARGET_DOMAIN}/public/check${pathname}${url.search}`;
+          // _nuxt assets are at the root: /_nuxt/* -> v2.a11yplan.de/_nuxt/*
+          targetUrl = `https://${TARGET_DOMAIN}${pathname}${url.search}`;
         } else {
           // check.a11yplan.de/* -> v2.a11yplan.de/public/check/*
           targetBase = `https://${TARGET_DOMAIN}/public/check`;
@@ -49,10 +48,10 @@ export default {
         }
         
       } else if (hostname === 'share.v2.a11yplan.de' || hostname.includes('share.')) {
-        // For Nuxt static assets, they are served from /public/share/_nuxt/
+        // For Nuxt static assets, they are served from the root
         if (pathname.startsWith('/_nuxt/') || pathname.startsWith('/_ipx/')) {
-          // Rewrite /_nuxt/* to /public/share/_nuxt/*
-          targetUrl = `https://${TARGET_DOMAIN}/public/share${pathname}${url.search}`;
+          // _nuxt assets are at the root: /_nuxt/* -> v2.a11yplan.de/_nuxt/*
+          targetUrl = `https://${TARGET_DOMAIN}${pathname}${url.search}`;
         } else {
           // share.v2.a11yplan.de/* -> v2.a11yplan.de/public/share/*
           targetBase = `https://${TARGET_DOMAIN}/public/share`;
