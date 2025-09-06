@@ -43,13 +43,12 @@ vars = { TARGET_DOMAIN = "staging-v2.a11yplan.de", ENABLE_CORS = "true" }
 # pattern = "share.v2.a11yplan.de/*"
 # zone_name = "a11yplan.de"
 
-# Observability settings
-[observability]
-enabled = true
+# Usage model
+usage_model = "bundled"
 
-# Limits and usage model
-[usage_model]
-default = "bundled"
+# Observability (optional - uncomment if available in your plan)
+# [observability]
+# enabled = true
 
 # Placement (optional - for latency optimization)
 # [placement]
