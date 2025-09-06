@@ -35,18 +35,28 @@ export default {
       
       // Route based on source domain
       if (hostname === 'check.a11yplan.de' || hostname.includes('check.')) {
-        // check.a11yplan.de/* -> v2.a11yplan.de/public/check/*
-        targetBase = `https://${TARGET_DOMAIN}/public/check`;
-        // Keep everything after the first slash (including empty path)
-        const subPath = pathname === '/' ? '' : pathname;
-        targetUrl = `${targetBase}${subPath}${url.search}`;
+        // Special handling for Nuxt static assets - they might be at the root
+        if (pathname.startsWith('/_nuxt/') || pathname.startsWith('/_ipx/')) {
+          // Try serving from root first
+          targetUrl = `https://${TARGET_DOMAIN}${pathname}${url.search}`;
+        } else {
+          // check.a11yplan.de/* -> v2.a11yplan.de/public/check/*
+          targetBase = `https://${TARGET_DOMAIN}/public/check`;
+          const subPath = pathname === '/' ? '' : pathname;
+          targetUrl = `${targetBase}${subPath}${url.search}`;
+        }
         
       } else if (hostname === 'share.v2.a11yplan.de' || hostname.includes('share.')) {
-        // share.v2.a11yplan.de/* -> v2.a11yplan.de/public/share/*
-        targetBase = `https://${TARGET_DOMAIN}/public/share`;
-        // Keep everything after the first slash (including empty path)
-        const subPath = pathname === '/' ? '' : pathname;
-        targetUrl = `${targetBase}${subPath}${url.search}`;
+        // Special handling for Nuxt static assets - they might be at the root
+        if (pathname.startsWith('/_nuxt/') || pathname.startsWith('/_ipx/')) {
+          // Try serving from root first
+          targetUrl = `https://${TARGET_DOMAIN}${pathname}${url.search}`;
+        } else {
+          // share.v2.a11yplan.de/* -> v2.a11yplan.de/public/share/*
+          targetBase = `https://${TARGET_DOMAIN}/public/share`;
+          const subPath = pathname === '/' ? '' : pathname;
+          targetUrl = `${targetBase}${subPath}${url.search}`;
+        }
         
       } else {
         // Unknown domain - return error
@@ -111,7 +121,7 @@ export default {
       headers.set('X-Forwarded-Host', hostname);
       
       // Forward the request with credentials
-      const response = await fetch(targetUrl, {
+      let response = await fetch(targetUrl, {
         method: request.method,
         headers: headers,
         body: request.method !== 'GET' && request.method !== 'HEAD' ? request.body : null,
@@ -120,6 +130,37 @@ export default {
         // Important: include credentials for Vercel
         credentials: 'include'
       });
+      
+      // Fallback: If we get HTML for a static asset, try alternative paths
+      if ((pathname.startsWith('/_nuxt/') || pathname.endsWith('.js') || pathname.endsWith('.css')) 
+          && response.headers.get('content-type')?.includes('text/html')) {
+        
+        console.log(`Got HTML for asset ${pathname}, trying fallback paths...`);
+        
+        // Try different path combinations
+        const fallbackPaths = [
+          `https://${TARGET_DOMAIN}/public/check${pathname}`, // Try under /public/check
+          `https://${TARGET_DOMAIN}${pathname}`, // Try at root (already tried but log it)
+        ];
+        
+        for (const fallbackUrl of fallbackPaths) {
+          console.log(`Trying fallback: ${fallbackUrl}`);
+          const fallbackResponse = await fetch(fallbackUrl, {
+            method: request.method,
+            headers: headers,
+            redirect: 'follow',
+            credentials: 'include'
+          });
+          
+          const fallbackContentType = fallbackResponse.headers.get('content-type') || '';
+          if (!fallbackContentType.includes('text/html') || fallbackResponse.status === 200) {
+            console.log(`Fallback successful: ${fallbackUrl} (${fallbackContentType})`);
+            response = fallbackResponse;
+            targetUrl = fallbackUrl; // Update for logging
+            break;
+          }
+        }
+      }
       
       // Create new response with cleaned headers
       const responseHeaders = new Headers(response.headers);
@@ -161,14 +202,22 @@ export default {
         modifiedResponse.headers.set('Cache-Control', 'public, max-age=3600');
       }
       
-      // Log for debugging (visible in Cloudflare dashboard)
+      // Enhanced logging for debugging
+      const contentType = response.headers.get('content-type') || 'unknown';
       console.log(JSON.stringify({
         method: request.method,
         path: url.pathname,
         status: response.status,
+        contentType: contentType,
         duration: Date.now() - startTime,
-        target: targetUrl
+        target: targetUrl,
+        isAsset: pathname.startsWith('/_nuxt/') || pathname.endsWith('.css') || pathname.endsWith('.js')
       }));
+      
+      // If we're getting HTML for a JS/CSS file, log error
+      if ((pathname.endsWith('.js') || pathname.endsWith('.css')) && contentType.includes('text/html')) {
+        console.error(`MIME type mismatch: Expected JS/CSS but got HTML for ${pathname} from ${targetUrl}`);
+      }
       
       return modifiedResponse;
       
