@@ -14,6 +14,19 @@ export default {
       const hostname = url.hostname;
       const pathname = url.pathname;
       
+      // Handle CORS preflight requests
+      if (request.method === 'OPTIONS') {
+        return new Response(null, {
+          status: 200,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+            'Access-Control-Max-Age': '86400',
+          }
+        });
+      }
+      
       // Determine target URL based on hostname
       let targetUrl;
       let targetBase;
@@ -23,29 +36,17 @@ export default {
       // Route based on source domain
       if (hostname === 'check.a11yplan.de' || hostname.includes('check.')) {
         // check.a11yplan.de/* -> v2.a11yplan.de/public/check/*
-        // Special handling for Nuxt.js assets
-        if (pathname.startsWith('/_nuxt/')) {
-          // _nuxt assets should be served from the root, not from /public/check
-          targetUrl = `https://${TARGET_DOMAIN}${pathname}${url.search}`;
-        } else {
-          targetBase = `https://${TARGET_DOMAIN}/public/check`;
-          // Keep everything after the first slash (including empty path)
-          const subPath = pathname === '/' ? '' : pathname;
-          targetUrl = `${targetBase}${subPath}${url.search}`;
-        }
+        targetBase = `https://${TARGET_DOMAIN}/public/check`;
+        // Keep everything after the first slash (including empty path)
+        const subPath = pathname === '/' ? '' : pathname;
+        targetUrl = `${targetBase}${subPath}${url.search}`;
         
       } else if (hostname === 'share.v2.a11yplan.de' || hostname.includes('share.')) {
         // share.v2.a11yplan.de/* -> v2.a11yplan.de/public/share/*
-        // Special handling for Nuxt.js assets
-        if (pathname.startsWith('/_nuxt/')) {
-          // _nuxt assets should be served from the root, not from /public/share
-          targetUrl = `https://${TARGET_DOMAIN}${pathname}${url.search}`;
-        } else {
-          targetBase = `https://${TARGET_DOMAIN}/public/share`;
-          // Keep everything after the first slash (including empty path)
-          const subPath = pathname === '/' ? '' : pathname;
-          targetUrl = `${targetBase}${subPath}${url.search}`;
-        }
+        targetBase = `https://${TARGET_DOMAIN}/public/share`;
+        // Keep everything after the first slash (including empty path)
+        const subPath = pathname === '/' ? '' : pathname;
+        targetUrl = `${targetBase}${subPath}${url.search}`;
         
       } else {
         // Unknown domain - return error
@@ -148,8 +149,8 @@ export default {
         headers: responseHeaders
       });
       
-      // Add CORS headers if needed (optional)
-      if (env.ENABLE_CORS === 'true') {
+      // Add CORS headers for static assets (always needed for _nuxt resources)
+      if (env.ENABLE_CORS === 'true' || pathname.startsWith('/_nuxt/')) {
         modifiedResponse.headers.set('Access-Control-Allow-Origin', '*');
         modifiedResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
         modifiedResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
