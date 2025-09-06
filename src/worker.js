@@ -36,10 +36,11 @@ export default {
       
       // Route based on source domain
       if (hostname === 'check.a11yplan.de' || hostname.includes('check.')) {
-        // Special handling for Nuxt static assets - they might be at the root
+        // For Nuxt static assets, they are served from /public/check/_nuxt/
+        // But the HTML references them as /_nuxt/, so we need to rewrite the path
         if (pathname.startsWith('/_nuxt/') || pathname.startsWith('/_ipx/')) {
-          // Try serving from root first
-          targetUrl = `https://${TARGET_DOMAIN}${pathname}${url.search}`;
+          // Rewrite /_nuxt/* to /public/check/_nuxt/*
+          targetUrl = `https://${TARGET_DOMAIN}/public/check${pathname}${url.search}`;
         } else {
           // check.a11yplan.de/* -> v2.a11yplan.de/public/check/*
           targetBase = `https://${TARGET_DOMAIN}/public/check`;
@@ -48,10 +49,10 @@ export default {
         }
         
       } else if (hostname === 'share.v2.a11yplan.de' || hostname.includes('share.')) {
-        // Special handling for Nuxt static assets - they might be at the root
+        // For Nuxt static assets, they are served from /public/share/_nuxt/
         if (pathname.startsWith('/_nuxt/') || pathname.startsWith('/_ipx/')) {
-          // Try serving from root first
-          targetUrl = `https://${TARGET_DOMAIN}${pathname}${url.search}`;
+          // Rewrite /_nuxt/* to /public/share/_nuxt/*
+          targetUrl = `https://${TARGET_DOMAIN}/public/share${pathname}${url.search}`;
         } else {
           // share.v2.a11yplan.de/* -> v2.a11yplan.de/public/share/*
           targetBase = `https://${TARGET_DOMAIN}/public/share`;
@@ -132,36 +133,6 @@ export default {
         credentials: 'include'
       });
       
-      // Fallback: If we get HTML for a static asset, try alternative paths
-      if ((pathname.startsWith('/_nuxt/') || pathname.endsWith('.js') || pathname.endsWith('.css')) 
-          && response.headers.get('content-type')?.includes('text/html')) {
-        
-        console.log(`Got HTML for asset ${pathname}, trying fallback paths...`);
-        
-        // Try different path combinations
-        const fallbackPaths = [
-          `https://${TARGET_DOMAIN}/public/check${pathname}`, // Try under /public/check
-          `https://${TARGET_DOMAIN}${pathname}`, // Try at root (already tried but log it)
-        ];
-        
-        for (const fallbackUrl of fallbackPaths) {
-          console.log(`Trying fallback: ${fallbackUrl}`);
-          const fallbackResponse = await fetch(fallbackUrl, {
-            method: request.method,
-            headers: headers,
-            redirect: 'follow',
-            credentials: 'include'
-          });
-          
-          const fallbackContentType = fallbackResponse.headers.get('content-type') || '';
-          if (!fallbackContentType.includes('text/html') || fallbackResponse.status === 200) {
-            console.log(`Fallback successful: ${fallbackUrl} (${fallbackContentType})`);
-            response = fallbackResponse;
-            targetUrl = fallbackUrl; // Update for logging
-            break;
-          }
-        }
-      }
       
       // Create new response with cleaned headers
       const responseHeaders = new Headers(response.headers);
@@ -185,7 +156,19 @@ export default {
         });
       }
       
-      const modifiedResponse = new Response(response.body, {
+      // For HTML responses, we might need to rewrite asset URLs
+      let responseBody = response.body;
+      const contentType = response.headers.get('content-type') || '';
+      
+      // If it's an HTML response from the main pages, rewrite the asset URLs
+      if (contentType.includes('text/html') && (pathname === '/' || pathname === '')) {
+        const text = await response.text();
+        // The HTML references /_nuxt/ but those files are actually served from the same domain
+        // We need to ensure the proxy correctly handles these requests
+        responseBody = text; // Keep the original HTML as-is
+      }
+      
+      const modifiedResponse = new Response(responseBody, {
         status: response.status,
         statusText: response.statusText,
         headers: responseHeaders
@@ -205,19 +188,19 @@ export default {
       }
       
       // Enhanced logging for debugging
-      const contentType = response.headers.get('content-type') || 'unknown';
+      const responseContentType = response.headers.get('content-type') || 'unknown';
       console.log(JSON.stringify({
         method: request.method,
         path: url.pathname,
         status: response.status,
-        contentType: contentType,
+        contentType: responseContentType,
         duration: Date.now() - startTime,
         target: targetUrl,
         isAsset: pathname.startsWith('/_nuxt/') || pathname.endsWith('.css') || pathname.endsWith('.js')
       }));
       
       // If we're getting HTML for a JS/CSS file, log error
-      if ((pathname.endsWith('.js') || pathname.endsWith('.css')) && contentType.includes('text/html')) {
+      if ((pathname.endsWith('.js') || pathname.endsWith('.css')) && responseContentType.includes('text/html')) {
         console.error(`MIME type mismatch: Expected JS/CSS but got HTML for ${pathname} from ${targetUrl}`);
       }
       
