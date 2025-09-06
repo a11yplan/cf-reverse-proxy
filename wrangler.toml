@@ -1,0 +1,53 @@
+# Cloudflare Worker Configuration
+name = "a11yplan-proxy"
+main = "src/worker.js"
+compatibility_date = "2024-09-01"
+
+# Account ID (optional - will be set automatically during wrangler login)
+# account_id = "your-account-id"
+
+# Environment variables (set these in Cloudflare dashboard or via secrets)
+[vars]
+TARGET_DOMAIN = "v2.a11yplan.de"
+ENABLE_CORS = "false"
+
+# Development settings
+[dev]
+port = 8787
+local_protocol = "http"
+
+# Production environment (optional)
+[env.production]
+name = "a11yplan-proxy-production"
+vars = { TARGET_DOMAIN = "v2.a11yplan.de", ENABLE_CORS = "false" }
+
+# Staging environment (optional)
+[env.staging]
+name = "a11yplan-proxy-staging"
+vars = { TARGET_DOMAIN = "staging-v2.a11yplan.de", ENABLE_CORS = "true" }
+
+# Custom domain routing
+# After deployment, add these custom domains in Cloudflare dashboard:
+# - check.a11yplan.de
+# - share.v2.a11yplan.de
+
+# Alternative: Use routes (if domains are in same Cloudflare account)
+# [[routes]]
+# pattern = "check.a11yplan.de/*"
+# zone_name = "a11yplan.de"
+# 
+# [[routes]]
+# pattern = "share.v2.a11yplan.de/*"
+# zone_name = "a11yplan.de"
+
+# Observability settings
+[observability]
+enabled = true
+
+# Limits and usage model
+[usage_model]
+default = "bundled"
+
+# Placement (optional - for latency optimization)
+# [placement]
+# mode = "smart"

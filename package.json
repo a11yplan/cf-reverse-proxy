@@ -1,0 +1,30 @@
+{
+  "name": "cf-reverse-proxy",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker reverse proxy for share URLs",
+  "main": "src/worker.js",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "deploy:staging": "wrangler deploy --env staging",
+    "deploy:production": "wrangler deploy --env production",
+    "tail": "wrangler tail",
+    "test": "vitest",
+    "format": "prettier --write ."
+  },
+  "keywords": [
+    "cloudflare",
+    "worker",
+    "reverse-proxy",
+    "edge"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^3.0.0",
+    "@cloudflare/workers-types": "^4.0.0",
+    "vitest": "^1.0.0",
+    "prettier": "^3.0.0"
+  }
+}
