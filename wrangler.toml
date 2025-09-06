@@ -1,6 +1,6 @@
 # Cloudflare Worker Configuration
 name = "a11yplan-proxy"
-main = "src/worker.js"  # Use the standard worker since /public is allowed
+main = "src/worker-minimal.js"  # Use the minimal worker for direct proxy
 compatibility_date = "2024-09-01"
 
 # Account ID - Using a11yplan.de account
