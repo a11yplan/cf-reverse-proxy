@@ -20,8 +20,9 @@ export default {
           status: 200,
           headers: {
             'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, HEAD',
+            'Access-Control-Allow-Headers': '*',
+            'Access-Control-Allow-Credentials': 'true',
             'Access-Control-Max-Age': '86400',
           }
         });
@@ -190,11 +191,12 @@ export default {
         headers: responseHeaders
       });
       
-      // Add CORS headers for static assets (always needed for _nuxt resources)
-      if (env.ENABLE_CORS === 'true' || pathname.startsWith('/_nuxt/')) {
+      // Always add CORS headers when enabled or for static assets
+      if (env.ENABLE_CORS === 'true') {
         modifiedResponse.headers.set('Access-Control-Allow-Origin', '*');
         modifiedResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-        modifiedResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        modifiedResponse.headers.set('Access-Control-Allow-Headers', '*');
+        modifiedResponse.headers.set('Access-Control-Allow-Credentials', 'true');
       }
       
       // Add cache control for successful responses (optional)

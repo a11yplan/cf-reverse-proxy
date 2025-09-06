@@ -3,13 +3,13 @@ name = "a11yplan-proxy"
 main = "src/worker.js"  # Use the standard worker since /public is allowed
 compatibility_date = "2024-09-01"
 
-# Account ID (optional - will be set automatically during wrangler login)
-# account_id = "your-account-id"
+# Account ID - Using a11yplan.de account
+account_id = "741118dc16030b5804645dec9959db53"
 
 # Environment variables (set these in Cloudflare dashboard or via secrets)
 [vars]
 TARGET_DOMAIN = "v2.a11yplan.de"
-ENABLE_CORS = "false"
+ENABLE_CORS = "true"
 # Optional: Add a bypass token if your Vercel app supports it
 # BYPASS_TOKEN = "your-secret-token"
 # USE_PERMANENT_REDIRECT = "false"  # For redirect worker only
