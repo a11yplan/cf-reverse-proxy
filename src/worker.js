@@ -23,17 +23,29 @@ export default {
       // Route based on source domain
       if (hostname === 'check.a11yplan.de' || hostname.includes('check.')) {
         // check.a11yplan.de/* -> v2.a11yplan.de/public/check/*
-        targetBase = `https://${TARGET_DOMAIN}/public/check`;
-        // Keep everything after the first slash (including empty path)
-        const subPath = pathname === '/' ? '' : pathname;
-        targetUrl = `${targetBase}${subPath}${url.search}`;
+        // Special handling for Nuxt.js assets
+        if (pathname.startsWith('/_nuxt/')) {
+          // _nuxt assets should be served from the root, not from /public/check
+          targetUrl = `https://${TARGET_DOMAIN}${pathname}${url.search}`;
+        } else {
+          targetBase = `https://${TARGET_DOMAIN}/public/check`;
+          // Keep everything after the first slash (including empty path)
+          const subPath = pathname === '/' ? '' : pathname;
+          targetUrl = `${targetBase}${subPath}${url.search}`;
+        }
         
       } else if (hostname === 'share.v2.a11yplan.de' || hostname.includes('share.')) {
         // share.v2.a11yplan.de/* -> v2.a11yplan.de/public/share/*
-        targetBase = `https://${TARGET_DOMAIN}/public/share`;
-        // Keep everything after the first slash (including empty path)
-        const subPath = pathname === '/' ? '' : pathname;
-        targetUrl = `${targetBase}${subPath}${url.search}`;
+        // Special handling for Nuxt.js assets
+        if (pathname.startsWith('/_nuxt/')) {
+          // _nuxt assets should be served from the root, not from /public/share
+          targetUrl = `https://${TARGET_DOMAIN}${pathname}${url.search}`;
+        } else {
+          targetBase = `https://${TARGET_DOMAIN}/public/share`;
+          // Keep everything after the first slash (including empty path)
+          const subPath = pathname === '/' ? '' : pathname;
+          targetUrl = `${targetBase}${subPath}${url.search}`;
+        }
         
       } else {
         // Unknown domain - return error
@@ -68,12 +80,25 @@ export default {
       }
       
       // Add standard browser headers to pass Vercel's bot check
-      headers.set('Accept', headers.get('Accept') || 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8');
+      // Use appropriate Accept header based on the resource type
+      if (pathname.endsWith('.js') || pathname.endsWith('.mjs')) {
+        headers.set('Accept', '*/*');
+        headers.set('Sec-Fetch-Dest', 'script');
+      } else if (pathname.endsWith('.css')) {
+        headers.set('Accept', 'text/css,*/*;q=0.1');
+        headers.set('Sec-Fetch-Dest', 'style');
+      } else if (pathname.match(/\.(png|jpg|jpeg|gif|svg|webp|ico)$/i)) {
+        headers.set('Accept', 'image/webp,image/apng,image/*,*/*;q=0.8');
+        headers.set('Sec-Fetch-Dest', 'image');
+      } else {
+        headers.set('Accept', headers.get('Accept') || 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8');
+        headers.set('Sec-Fetch-Dest', 'document');
+      }
+      
       headers.set('Accept-Language', headers.get('Accept-Language') || 'en-US,en;q=0.5');
       headers.set('Accept-Encoding', 'gzip, deflate, br');
-      headers.set('Sec-Fetch-Dest', 'document');
-      headers.set('Sec-Fetch-Mode', 'navigate');
-      headers.set('Sec-Fetch-Site', 'none');
+      headers.set('Sec-Fetch-Mode', pathname.startsWith('/_nuxt/') ? 'cors' : 'navigate');
+      headers.set('Sec-Fetch-Site', 'same-origin');
       
       // Add X-Forwarded headers for the origin server
       const clientIP = request.headers.get('CF-Connecting-IP') || request.headers.get('X-Forwarded-For') || '';
