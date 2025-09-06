@@ -1,6 +1,6 @@
 # Cloudflare Worker Configuration
 name = "a11yplan-proxy"
-main = "src/worker.js"
+main = "src/worker.js"  # Use the standard worker since /public is allowed
 compatibility_date = "2024-09-01"
 
 # Account ID (optional - will be set automatically during wrangler login)
