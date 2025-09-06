@@ -206,6 +206,39 @@ modifiedResponse.headers.set('Cache-Control', 'public, max-age=3600');
    - The worker preserves all paths and query parameters
    - Check the console logs in Cloudflare dashboard for the actual target URL
 
+### Vercel Bot Protection Issues
+
+If you see "Wir überprüfen Ihren Browser - fehlgeschlagen" (browser check failed), this is Vercel's bot protection. The worker includes headers to bypass this, but if issues persist:
+
+#### Option 1: Use the Enhanced Worker (default)
+The main worker (`src/worker.js`) includes:
+- Browser-like User-Agent headers
+- Proper cookie handling
+- Security headers that Vercel expects
+
+#### Option 2: Use Simple Redirect (alternative)
+If proxying doesn't work, try the redirect approach:
+```bash
+# Edit wrangler.toml to use the redirect worker
+main = "src/worker-redirect.js"
+
+# Deploy
+bun run deploy
+```
+
+This will use 302 redirects instead of proxying, which bypasses Vercel's bot check but changes the URL in the browser.
+
+#### Option 3: Whitelist Cloudflare IPs
+In your Vercel project settings:
+1. Go to Project Settings → Functions
+2. Add Cloudflare's IP ranges to the allowlist
+3. Or disable bot protection for `/public/*` routes
+
+#### Option 4: Add Custom Headers
+Set these environment variables in Cloudflare dashboard:
+- `BYPASS_BOT_CHECK`: Custom header your Vercel app recognizes
+- `SECRET_TOKEN`: Shared secret between Cloudflare and Vercel
+
 ### Debug Mode
 
 Enable verbose logging by checking the logs:

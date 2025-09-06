@@ -10,6 +10,9 @@ compatibility_date = "2024-09-01"
 [vars]
 TARGET_DOMAIN = "v2.a11yplan.de"
 ENABLE_CORS = "false"
+# Optional: Add a bypass token if your Vercel app supports it
+# BYPASS_TOKEN = "your-secret-token"
+# USE_PERMANENT_REDIRECT = "false"  # For redirect worker only
 
 # Development settings
 [dev]
